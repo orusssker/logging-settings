@@ -1,0 +1,67 @@
+import logging
+import logging.handlers
+
+# Создаем форматеры
+console_formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+file_formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(module)s - %(message)s')
+error_file_formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s - %(pathname)s\n%(exc_info)s')
+
+# Создаем обработчики для каждого типа вывода
+console_handler = logging.StreamHandler()
+console_handler.setLevel(logging.DEBUG)
+console_handler.setFormatter(console_formatter)
+
+general_file_handler = logging.FileHandler('general.log')
+general_file_handler.setLevel(logging.INFO)
+general_file_handler.setFormatter(file_formatter)
+
+errors_file_handler = logging.FileHandler('errors.log')
+errors_file_handler.setLevel(logging.ERROR)
+errors_file_handler.setFormatter(error_file_formatter)
+
+# Создаем регистраторы (логгеры) для каждого типа логирования
+main_logger = logging.getLogger('django')
+main_logger.setLevel(logging.DEBUG)
+main_logger.addHandler(console_handler)
+main_logger.addHandler(general_file_handler)
+main_logger.addHandler(errors_file_handler)
+
+security_logger = logging.getLogger('django.security')
+security_logger.setLevel(logging.DEBUG)  # Уровень можно настроить в зависимости от требований
+security_logger.addHandler(console_handler)
+security_logger.addHandler(general_file_handler)
+
+# Настройка фильтров для регистраторов
+class DebugFilter(logging.Filter):
+    def filter(self, record):
+        return not record.levelno == logging.DEBUG
+
+class ErrorFilter(logging.Filter):
+    def filter(self, record):
+        return record.levelno >= logging.ERROR
+
+console_handler.addFilter(DebugFilter())
+general_file_handler.addFilter(DebugFilter())
+errors_file_handler.addFilter(ErrorFilter())
+
+# Настройка отправки на почту (подставьте свои настройки)
+mail_handler = logging.handlers.SMTPHandler(
+    mailhost=('smtp.example.com', 587),
+    fromaddr='your_email@example.com',
+    toaddrs=['recipient@example.com'],
+    subject='Error in Django Application',
+)
+mail_handler.setLevel(logging.ERROR)
+mail_handler.setFormatter(error_file_formatter)
+main_logger.addHandler(mail_handler)
+
+# Пример использования
+def main():
+    main_logger.debug('This is a DEBUG message')
+    main_logger.info('This is an INFO message')
+    main_logger.warning('This is a WARNING message')
+    main_logger.error('This is an ERROR message')
+    main_logger.critical('This is a CRITICAL message')
+
+if __name__ == '__main__':
+    main()
